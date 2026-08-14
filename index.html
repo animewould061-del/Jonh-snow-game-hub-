@@ -1,131 +1,209 @@
-
 <!DOCTYPE html>
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <title>Tic-Tac-Toe Game 🎮</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>2D Car Driving Game</title>
     <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
         body {
-            font-family: 'Segoe UI', sans-serif;
-            background-color: #0f172a;
-            color: #f8fafc;
+            background-color: #1a1a1a;
+            color: #fff;
+            font-family: sans-serif;
             text-align: center;
-            padding: 20px;
-        }
-        h1 { color: #38bdf8; }
-        .board {
-            display: grid;
-            grid-template-columns: repeat(3, 90px);
-            grid-gap: 10px;
-            justify-content: center;
-            margin: 20px auto;
-        }
-        .cell {
-            width: 90px;
-            height: 90px;
-            background-color: #1e293b;
-            border: 2px solid #334155;
-            border-radius: 12px;
-            font-size: 36px;
-            font-weight: bold;
+            overflow: hidden;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            color: #38bdf8;
+            height: 100vh;
         }
-        #status {
+        #score-board {
             font-size: 20px;
+            margin-bottom: 10px;
             font-weight: bold;
-            margin: 15px 0;
-            color: #4ade80;
+        }
+        #gameCanvas {
+            background-color: #333;
+            border: 4px solid #fff;
+            border-radius: 8px;
+            display: block;
+        }
+        .controls {
+            margin-top: 15px;
+            display: flex;
+            gap: 15px;
         }
         .btn {
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            background-color: #ff4757;
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
+            padding: 15px 25px;
+            font-size: 18px;
             font-weight: bold;
-            cursor: pointer;
+            border-radius: 8px;
+            touch-action: manipulation;
+        }
+        .btn:active {
+            background-color: #ff6b81;
+        }
+        #restartBtn {
+            margin-top: 10px;
+            background-color: #2ed573;
+            display: none;
         }
     </style>
 </head>
 <body>
 
-    <h1>Tic-Tac-Toe Game ❌⭕</h1>
-    <div id="status">Player X ki Turn</div>
+    <div id="score-board">Score: <span id="score">0</span></div>
+    <canvas id="gameCanvas" width="300" height="400"></canvas>
 
-    <div class="board">
-        <div class="cell" onclick="makeMove(this, 0)"></div>
-        <div class="cell" onclick="makeMove(this, 1)"></div>
-        <div class="cell" onclick="makeMove(this, 2)"></div>
-        <div class="cell" onclick="makeMove(this, 3)"></div>
-        <div class="cell" onclick="makeMove(this, 4)"></div>
-        <div class="cell" onclick="makeMove(this, 5)"></div>
-        <div class="cell" onclick="makeMove(this, 6)"></div>
-        <div class="cell" onclick="makeMove(this, 7)"></div>
-        <div class="cell" onclick="makeMove(this, 8)"></div>
+    <div class="controls">
+        <button class="btn" id="leftBtn">◀ LEFT</button>
+        <button class="btn" id="rightBtn">RIGHT ▶</button>
     </div>
-
-    <button class="btn" onclick="resetGame()">Restart Game 🔄</button>
+    <button class="btn" id="restartBtn" onclick="resetGame()">Restart Game 🔄</button>
 
     <script>
-        let currentPlayer = 'X';
-        let boardState = ['', '', '', '', '', '', '', '', ''];
-        let gameActive = true;
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
 
-        const winPatterns = [
-            [0, 1, 2], [3, 4, 5], [6, 7, 8],
-            [0, 3, 6], [1, 4, 7], [2, 5, 8],
-            [0, 4, 8], [2, 4, 6]
+        let score = 0;
+        let gameOver = false;
+        let roadOffset = 0;
+
+        // Player Car
+        const player = {
+            x: 130,
+            y: 320,
+            width: 40,
+            height: 70,
+            speed: 5
+        };
+
+        // Enemy Cars
+        const enemies = [
+            { x: 50, y: -100, width: 40, height: 70, speed: 3 },
+            { x: 210, y: -300, width: 40, height: 70, speed: 4 }
         ];
 
-        function makeMove(cell, index) {
-            if (boardState[index] !== '' || !gameActive) return;
+        let moveLeft = false;
+        let moveRight = false;
 
-            boardState[index] = currentPlayer;
-            cell.innerText = currentPlayer;
-            cell.style.color = currentPlayer === 'X' ? '#38bdf8' : '#f87171';
+        // Controls
+        const leftBtn = document.getElementById("leftBtn");
+        const rightBtn = document.getElementById("rightBtn");
 
-            checkWinner();
+        leftBtn.addEventListener("touchstart", (e) => { e.preventDefault(); moveLeft = true; });
+        leftBtn.addEventListener("touchend", () => moveLeft = false);
+        leftBtn.addEventListener("mousedown", () => moveLeft = true);
+        leftBtn.addEventListener("mouseup", () => moveLeft = false);
+
+        rightBtn.addEventListener("touchstart", (e) => { e.preventDefault(); moveRight = true; });
+        rightBtn.addEventListener("touchend", () => moveRight = false);
+        rightBtn.addEventListener("mousedown", () => moveRight = true);
+        rightBtn.addEventListener("mouseup", () => moveRight = false);
+
+        function drawRoad() {
+            // Road Lines
+            ctx.strokeStyle = "#fff";
+            ctx.setLineDash([20, 20]);
+            ctx.lineWidth = 4;
+            ctx.lineDashOffset = -roadOffset;
+            
+            ctx.beginPath();
+            ctx.moveTo(100, 0);
+            ctx.lineTo(100, 400);
+            ctx.moveTo(200, 0);
+            ctx.lineTo(200, 400);
+            ctx.stroke();
+
+            roadOffset += 4;
         }
 
-        function checkWinner() {
-            let roundWon = false;
-            for (let pattern of winPatterns) {
-                let [a, b, c] = pattern;
-                if (boardState[a] && boardState[a] === boardState[b] && boardState[a] === boardState[c]) {
-                    roundWon = true;
-                    break;
+        function drawCar(x, y, color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, 40, 70); // Body
+            ctx.fillStyle = "#000";
+            ctx.fillRect(x - 3, y + 10, 5, 15); // Wheels
+            ctx.fillRect(x + 38, y + 10, 5, 15);
+            ctx.fillRect(x - 3, y + 45, 5, 15);
+            ctx.fillRect(x + 38, y + 45, 5, 15);
+        }
+
+        function update() {
+            if (gameOver) return;
+
+            // Player Movement
+            if (moveLeft && player.x > 10) player.x -= player.speed;
+            if (moveRight && player.x < 250) player.x += player.speed;
+
+            // Enemies Movement
+            enemies.forEach(enemy => {
+                enemy.y += enemy.speed;
+
+                // Reset enemy when off screen
+                if (enemy.y > 400) {
+                    enemy.y = -100;
+                    enemy.x = Math.floor(Math.random() * 3) * 80 + 20; // Random lane
+                    score += 10;
+                    document.getElementById("score").innerText = score;
                 }
-            }
 
-            if (roundWon) {
-                document.getElementById('status').innerText = `🎉 Player ${currentPlayer} Jeet Gaya!`;
-                gameActive = false;
-                return;
-            }
+                // Collision Detection
+                if (
+                    player.x < enemy.x + enemy.width &&
+                    player.x + player.width > enemy.x &&
+                    player.y < enemy.y + enemy.height &&
+                    player.y + player.height > enemy.y
+                ) {
+                    gameOver = true;
+                    document.getElementById("restartBtn").style.display = "block";
+                }
+            });
+        }
 
-            if (!boardState.includes('')) {
-                document.getElementById('status').innerText = "🤝 Match Tie Ho Gaya!";
-                gameActive = false;
-                return;
-            }
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            drawRoad();
+            drawCar(player.x, player.y, "#e74c3c"); // Red Player Car
 
-            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
-            document.getElementById('status').innerText = `Player ${currentPlayer} ki Turn`;
+            enemies.forEach(enemy => {
+                drawCar(enemy.x, enemy.y, "#f1c40f"); // Yellow Enemy Cars
+            });
+
+            if (gameOver) {
+                ctx.fillStyle = "white";
+                ctx.font = "30px sans-serif";
+                ctx.fillText("GAME OVER!", 50, 200);
+            }
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
         }
 
         function resetGame() {
-            boardState = ['', '', '', '', '', '', '', '', ''];
-            gameActive = true;
-            currentPlayer = 'X';
-            document.getElementById('status').innerText = "Player X ki Turn";
-            document.querySelectorAll('.cell').forEach(cell => cell.innerText = '');
+            player.x = 130;
+            enemies[0].y = -100;
+            enemies[1].y = -300;
+            score = 0;
+            document.getElementById("score").innerText = score;
+            gameOver = false;
+            document.getElementById("restartBtn").style.display = "none";
         }
-    </script>
 
+        gameLoop();
+    </script>
 </body>
 </html>
 
