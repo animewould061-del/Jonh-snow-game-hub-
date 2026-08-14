@@ -1,0 +1,131 @@
+
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <title>Tic-Tac-Toe Game 🎮</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            text-align: center;
+            padding: 20px;
+        }
+        h1 { color: #38bdf8; }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 90px);
+            grid-gap: 10px;
+            justify-content: center;
+            margin: 20px auto;
+        }
+        .cell {
+            width: 90px;
+            height: 90px;
+            background-color: #1e293b;
+            border: 2px solid #334155;
+            border-radius: 12px;
+            font-size: 36px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #38bdf8;
+        }
+        #status {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 15px 0;
+            color: #4ade80;
+        }
+        .btn {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Tic-Tac-Toe Game ❌⭕</h1>
+    <div id="status">Player X ki Turn</div>
+
+    <div class="board">
+        <div class="cell" onclick="makeMove(this, 0)"></div>
+        <div class="cell" onclick="makeMove(this, 1)"></div>
+        <div class="cell" onclick="makeMove(this, 2)"></div>
+        <div class="cell" onclick="makeMove(this, 3)"></div>
+        <div class="cell" onclick="makeMove(this, 4)"></div>
+        <div class="cell" onclick="makeMove(this, 5)"></div>
+        <div class="cell" onclick="makeMove(this, 6)"></div>
+        <div class="cell" onclick="makeMove(this, 7)"></div>
+        <div class="cell" onclick="makeMove(this, 8)"></div>
+    </div>
+
+    <button class="btn" onclick="resetGame()">Restart Game 🔄</button>
+
+    <script>
+        let currentPlayer = 'X';
+        let boardState = ['', '', '', '', '', '', '', '', ''];
+        let gameActive = true;
+
+        const winPatterns = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8],
+            [0, 3, 6], [1, 4, 7], [2, 5, 8],
+            [0, 4, 8], [2, 4, 6]
+        ];
+
+        function makeMove(cell, index) {
+            if (boardState[index] !== '' || !gameActive) return;
+
+            boardState[index] = currentPlayer;
+            cell.innerText = currentPlayer;
+            cell.style.color = currentPlayer === 'X' ? '#38bdf8' : '#f87171';
+
+            checkWinner();
+        }
+
+        function checkWinner() {
+            let roundWon = false;
+            for (let pattern of winPatterns) {
+                let [a, b, c] = pattern;
+                if (boardState[a] && boardState[a] === boardState[b] && boardState[a] === boardState[c]) {
+                    roundWon = true;
+                    break;
+                }
+            }
+
+            if (roundWon) {
+                document.getElementById('status').innerText = `🎉 Player ${currentPlayer} Jeet Gaya!`;
+                gameActive = false;
+                return;
+            }
+
+            if (!boardState.includes('')) {
+                document.getElementById('status').innerText = "🤝 Match Tie Ho Gaya!";
+                gameActive = false;
+                return;
+            }
+
+            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+            document.getElementById('status').innerText = `Player ${currentPlayer} ki Turn`;
+        }
+
+        function resetGame() {
+            boardState = ['', '', '', '', '', '', '', '', ''];
+            gameActive = true;
+            currentPlayer = 'X';
+            document.getElementById('status').innerText = "Player X ki Turn";
+            document.querySelectorAll('.cell').forEach(cell => cell.innerText = '');
+        }
+    </script>
+
+</body>
+</html>
+
